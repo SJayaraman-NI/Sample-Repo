@@ -1,0 +1,1 @@
+All Static resources in the project go here. For e.g., images.

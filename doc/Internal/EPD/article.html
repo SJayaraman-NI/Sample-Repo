@@ -1,0 +1,122 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<link href="/cms/images/devzone/elj/zonecms.css" rel="stylesheet" type="text/css" />
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+<meta name="generator" content="EditLive! 6.2.3.64" />
+</head>
+<body>
+<h2>I<sup>2</sup>C Bus Specification</h2>
+
+<p>The I<sup>2</sup>C&#160;bus was invented by Phillips/NXP to connect low-speed peripherals.&#160;A high-level description of the bus can be found on <a href="http://en.wikipedia.org/wiki/I2c">Wikipedia</a>. The current specification (UM10204, <i>I<sup>2</sup>C Bus Specification and User&#160;Manual Rev. 03</i>) is available for download from <a href="http://www.nxp.com/acrobat_download/usermanuals/UM10204_3.pdf">NXP's website</a>.</p>
+
+<h2>The I<sup>2</sup>C Digital Waveform Component</h2>
+
+<p>The NI&#160;I<sup>2</sup>C&#160;Digital Waveform (IDW) component installs a new library into the <span class="code">&#60;user.lib&#62;</span> folder, called <b>IDW.lvlib</b>. This library contains all the API&#160;VIs, type definitions, subVIs, and polymorphic instance VIs belonging to the component. The API&#160;VIs can be placed on the diagram from the I<sup>2</sup>C&#160;Digital Waveform palette in the User Libraries function palette.</p>
+
+<p align="center"><img src="/cms/images/devzone/epd/palette.PNG" alt="" /></p>
+
+<p class="note" align="center">I2C&#160;Digital Waveform palette</p>
+
+<p>The I<sup>2</sup>C&#160;Digital Waveform palette contains three rows of VIs.&#160;The top row contains utility functions that handle timing parameters and IDW sessions. The middle row contains high-level VIs that build segments of an I<sup>2</sup>C&#160;command. The bottom row contains low-level VIs that add an individual bit to the waveform.</p>
+
+<p>The component also installs example VIs into the Example Finder. (See below.)</p>
+
+<h3>Supported I<sup>2</sup>C Protocol Features</h3>
+
+<p>The&#160;IDW&#160;library allows the developer to construct valid I<sup>2</sup>C waveforms for a <b>master node</b> on a <b>single-master bus</b>. All mandatory features for a single-master configuration are implemented, including:</p>
+
+<ul>
+<li>START&#160;condition</li>
+
+<li>STOP&#160;condition</li>
+
+<li>Acknowledge</li>
+
+<li>7-bit slave address</li>
+</ul>
+
+<p>The following features, all of them optional, are <b>not implemented</b>:</p>
+
+<ul>
+<li>Clock stretching</li>
+
+<li>10-bit slave address<sup>1</sup></li>
+</ul>
+
+<p><sup>1</sup> 10-bit addressing can be constructed using the low-level IDW VIs. &#160;The Add Data Byte and Add Addr Byte VIs should be studied as templates for doing so.</p>
+
+<h3>IDW&#160;VIs</h3>
+
+<p>IDW.lvlib contains the following API&#160;functions:</p>
+
+<p align="center"><img src="/cms/images/devzone/epd/init_vi_20081028164629.PNG" alt="" /></p>
+
+<p align="left">Init.vi performs two functions.&#160;It coerces timing values to the generating device's sample clock and validates the coerced parameters against the desired&#160;I<sup>2</sup>C&#160;clock rate. It then creates the session cluster (I<sup>2</sup>C waveform info) that is used by the waveform component VIs.</p>
+
+<p align="left">Init.vi is polymorphic. Its default action is to preallocate memory for the I<sup>2</sup>C&#160;waveform. This greatly increases the execution speed of the waveform component VIs, but it requires a parameter for how many samples will be used in the waveform. Its alternate action, which is not to preallocate memory, circumvents this requirement at the cost of execution speed.</p>
+
+<p align="center"><img src="/cms/images/devzone/epd/close_vi_20090212141823.PNG" alt="" /></p>
+
+<p align="left">Close.vi closes the session by converting the I<sup>2</sup>C waveform info cluster into a digital waveform (DWDT). This DWDT can also optionally be appended to an existing DWDT.</p>
+
+<p align="left">This VI performs two functions specific to the HSDIO&#160;line of NI devices. Devices that use the NI-HSDIO driver commonly require waveforms to&#160;meet memory alignment. &#160;This is specified as a sample quantum, usually 2, 4 or 8 samples. &#160;When building the DWDT, the VI&#160;coerces the waveform's length to a multiple of the sample quantum by duplicating the last sample repeatedly. &#160;The NI 655x devices also feature a Hardware Compare engine that can compare sampled data to an expected waveform in real-time, making the analysis of returned slave messages much more efficient. &#160;This VI&#160;outputs a list of bits that the Hardware Compare engine will analyze, providing both their sample locations in the waveform and their type (ACK&#160;or Data).</p>
+
+<p align="center"><img src="/cms/images/devzone/epd/validate_timing_vi.PNG" alt="" /></p>
+
+<p align="left">Validate Timing.vi compares timing parameters to the requirements specified in NXP&#160;UM10204, <i>I<sup>2</sup>C Bus Specification and User&#160;Manual Rev. 03</i>. These parameters are found in Table 6 and Figure 27 (pp. 37-38). The values are stored in a <a href="http://zone.ni.com/reference/en-XX/help/371361B-01/lvconcepts/creating_configuration_files/">LabVIEW&#160;Configuration File</a> named <span class="code">Mode Timing.da</span>t, found in the IDW library folder.</p>
+
+<p align="center"><img src="/cms/images/devzone/epd/add_start_condition_vi.PNG" alt="" /></p>
+
+<p align="left">Add Start Condition.vi appends a Start or Repeated Start condition to the waveform. This segment must be the first section of any I<sup>2</sup>C packet, though it can appear multiple times as a Repeated Start.</p>
+
+<p align="center"><img src="/cms/images/devzone/epd/add_addr_byte_vi.PNG" alt="" /></p>
+
+<p align="left">Add Addr Byte.vi appends a slave address and a Read/Write bit to the waveform. The slave address is taken from the seven least significant bits (LSBs) of the <b>Slave address</b> input.</p>
+
+<p align="center"><img src="/cms/images/devzone/epd/add_data_byte_vi.PNG" alt="" /></p>
+
+<p align="left">Add Data Byte.vi appends a byte of binary data to the waveform. The VI allows the caller to specify a bit order (MSB-first or LSB-first), though the I<sup>2</sup>C specification requires MSB-first communication in compliant packets. If a "Transmit" action is chosen, it transmits the data byte to the slave. If a "Receive" action is chosen, it compares the byte received from the slave to an expected byte.</p>
+
+<p align="center"><img src="/cms/images/devzone/epd/add_ack_bit_vi.PNG" alt="" /></p>
+
+<p align="left">Add Acknowledge Bit.vi appends a single bit to the waveform. If a "Send" action is chosen, it transmits either an ACK or a NACK bit. &#160;If a "Listen" action is chosen, it compares the data received from a slave device to an expected bit (ACK&#160;or&#160;NACK).</p>
+
+<p align="center"><img src="/cms/images/devzone/epd/add_stop_condition_vi.PNG" alt="" /></p>
+
+<p align="left">Add Stop Condition.vi appends a Stop condition to the waveform. This is usually the last segment of an I<sup>2</sup>C&#160;packet.</p>
+
+<p align="center"><img src="/cms/images/devzone/epd/add_clocked_bit_vi_20090212141823.PNG" alt="" /></p>
+
+<p align="left">Add Clocked Bit.vi is a low-level function that appends a single bit to an I<sup>2</sup>C&#160;waveform. This bit follows the same timing constraints as the high-level waveform segment functions. &#160;If the bit corresponds to a data or ACK bit sent by the a slave device, the bit's type should be provided to facilitate decoding the response message with the NI 655x Hardware Compare engine.</p>
+
+<p align="center"><img src="/cms/images/devzone/epd/interpret_data_vi.PNG" alt="" /></p>
+
+<p align="left">Interpret Data.vi is a low-level function that converts byte (or byte array) data into digital data that is compatible with the Digital Waveform Datatype (DWDT). For a "Transmit" action, it interprets [1, 0] as the drive states [Z, 0] and for a "Receive" action, it interprets [1, 0] as the compare states [H, L].</p>
+
+<h3>Installed Examples</h3>
+
+<p>Three example VIs are installed by this component. To open them using the NI&#160;Example&#160;Finder, select "Browse by Directory Structure" and navigate to the <b>I<sup>2</sup>C&#160;Digital Waveform</b> folder. They can also be found at the installation path <span class="code">&#60;lvdir&#62;/examples/I2C&#160;Digital Waveform</span>.</p>
+
+<h2>Using the IDW&#160;Library to Generate I<sup>2</sup>C Packets</h2>
+
+<p>Because the API VIs build a waveform by appending segments to each other, they can be called in sequence to construct an I<sup>2</sup>C packet dynamically. For example, a packet that transmits one byte of data from the master to a slave at address 0x72 is shown. The waveform data is broken down into its component parts, according to the I<sup>2</sup>C&#160;specification.</p>
+
+<p align="center"><img src="/cms/images/devzone/epd/waveform_final.PNG" alt="" /></p>
+
+<p class="note" align="center">A single-byte transmit packet, broken down into its components</p>
+
+<p align="left">Shown below are the VIs used to build this waveform. They are called in the exact same sequence as the waveform they construct. The Init and Close VIs are used to gather timing information and to convert the final waveform to a DWDT.</p>
+
+<p align="center"><img src="/cms/images/devzone/epd/transmit_code.PNG" alt="" /></p>
+
+<p class="note" align="center">Code used to generate a single-byte transmit packet</p>
+
+<p align="left">This provides an intuitive interface for test designers, as well as a&#160;modular API that can be wrapped into higher-level functions that build custom packets for specific slave devices, needing only the transmitted or expected data and slave address as inputs.</p>
+
+<h2>Discussion and Feedback</h2>
+
+<p>This component was created by the NI&#160;Systems Engineering group.</p>
+
+<p>We welcome discussion and feedback about this component. <a href="http://forums.ni.com/ni/board/message?board.id=Components&#38;thread.id=68"><b>The I2C&#160;Digital Waveform Library thread</b></a> is available on the NI&#160;Discussion Forums for questions, comments, and suggestions.</p>
+</body>
+</html>
